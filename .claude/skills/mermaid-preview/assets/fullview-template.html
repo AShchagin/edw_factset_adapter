@@ -1,0 +1,278 @@
+<title>__DIAGRAM_TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one-screen editor, code pane left, diagram canvas right; stacked on phones. */
+:root {
+  --bg: #f3f6fa;
+  --surface: #ffffff;
+  --fg: #1b2a3a;
+  --muted: #5b6b7c;
+  --line: #d6dee8;
+  --accent: #185FA5;
+  --accent-ink: #ffffff;
+  --canvas: #ffffff;
+  --code-bg: #f8fafc;
+  --danger: #b3261e;
+  --focus: #378ADD;
+  --font-ui: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-code: ui-monospace, "Cascadia Code", Consolas, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1720;
+    --surface: #16212d;
+    --fg: #e6edf5;
+    --muted: #93a4b6;
+    --line: #2a3947;
+    --accent: #6aa9ec;
+    --accent-ink: #0b1622;
+    --code-bg: #101a25;
+    --danger: #ff8a80;
+    --focus: #85B7EB;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1720;
+  --surface: #16212d;
+  --fg: #e6edf5;
+  --muted: #93a4b6;
+  --line: #2a3947;
+  --accent: #6aa9ec;
+  --accent-ink: #0b1622;
+  --code-bg: #101a25;
+  --danger: #ff8a80;
+  --focus: #85B7EB;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+h1 { font-size: 16px; font-weight: 600; margin: 0; margin-right: auto; }
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+button {
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-height: 34px;
+  cursor: pointer;
+}
+button:hover { background: var(--bg); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+#zlabel { min-width: 48px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 36%) minmax(0, 1fr);
+  gap: 12px;
+}
+.pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
+.label { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+#src {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  box-sizing: border-box;
+  font-family: var(--font-code);
+  font-size: 13px;
+  line-height: 1.55;
+  tab-size: 4;
+  padding: 12px 14px;
+  color: var(--fg);
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  white-space: pre;
+  overflow: auto;
+}
+#out {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+#out svg { display: block; margin: 0 auto; }
+#err { min-height: 18px; margin: 0; font-size: 13px; color: var(--danger); }
+@media (max-width: 760px) {
+  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(150px, 34%) minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button { transition: background 120ms ease; }
+}
+</style>
+<header>
+  <h1>__DIAGRAM_TITLE__</h1>
+  <div class="tools" role="toolbar" aria-label="Diagram tools">
+    <button id="zout" type="button" aria-label="Zoom out">−</button>
+    <span id="zlabel" aria-live="polite">Fit</span>
+    <button id="zin" type="button" aria-label="Zoom in">+</button>
+    <button id="z100" type="button">100%</button>
+    <button id="zfit" type="button" aria-pressed="true">Fit</button>
+    <button id="copy" type="button">Copy code</button>
+    <button id="reset" type="button">Reset</button>
+  </div>
+</header>
+<main>
+  <section class="pane" aria-label="Mermaid code">
+    <div class="label">Code</div>
+    <textarea id="src" spellcheck="false" aria-label="Mermaid diagram code">__MERMAID_CODE__</textarea>
+  </section>
+  <section class="pane" aria-label="Diagram preview">
+    <div class="label">Preview</div>
+    <div id="out"></div>
+    <p id="err" role="status"></p>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+var KEY = 'mermaid-preview-code';
+var src = document.getElementById('src');
+var out = document.getElementById('out');
+var err = document.getElementById('err');
+var zlabel = document.getElementById('zlabel');
+var zfit = document.getElementById('zfit');
+var DEFAULT_CODE = src.value;
+var zoom = 'fit';
+var n = 0;
+var timer = null;
+
+try {
+  var saved = localStorage.getItem(KEY);
+  if (saved) src.value = saved;
+} catch (e) {}
+
+var css = '.node rect{rx:14px;ry:14px;stroke-width:1px;}'
+  + '.nodeLabel{font-weight:500;}'
+  + '.flowchart-link{stroke-width:1px;}'
+  + '.edgeLabel{background-color:#ffffff;}'
+  + 'span.edgeLabel{display:inline-block;border:1px solid #cfd6dd;border-radius:999px;padding:2px 10px;font-size:12px;color:#44546a;background-color:#ffffff;}';
+
+if (typeof mermaid === 'undefined') {
+  err.textContent = 'The Mermaid library did not load, so the preview is unavailable.';
+} else {
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'base',
+    themeCSS: css,
+    themeVariables: {
+      fontFamily: 'Segoe UI, system-ui, sans-serif',
+      fontSize: '14px',
+      primaryColor: '#E6F1FB',
+      primaryBorderColor: '#B5D4F4',
+      primaryTextColor: '#0C447C',
+      textColor: '#0C447C',
+      lineColor: '#8b95a1',
+      edgeLabelBackground: '#ffffff'
+    },
+    flowchart: { curve: 'step', htmlLabels: true, nodeSpacing: 40, rankSpacing: 55, padding: 14, useMaxWidth: true }
+  });
+}
+
+function naturalWidth(svg) {
+  var vb = svg.viewBox && svg.viewBox.baseVal;
+  return vb && vb.width ? vb.width : svg.getBoundingClientRect().width;
+}
+
+function applyZoom() {
+  var svg = out.querySelector('svg');
+  if (!svg) return;
+  svg.style.maxWidth = 'none';
+  svg.style.height = 'auto';
+  if (zoom === 'fit') {
+    svg.style.width = '100%';
+    zlabel.textContent = 'Fit';
+  } else {
+    svg.style.width = Math.round(naturalWidth(svg) * zoom) + 'px';
+    zlabel.textContent = Math.round(zoom * 100) + '%';
+  }
+  zfit.setAttribute('aria-pressed', zoom === 'fit' ? 'true' : 'false');
+}
+
+async function draw() {
+  err.textContent = '';
+  if (typeof mermaid === 'undefined') return;
+  var id = 'mm' + (n++);
+  try {
+    var res = await mermaid.render(id, src.value);
+    out.innerHTML = res.svg;
+    applyZoom();
+  } catch (e) {
+    err.textContent = 'Syntax error: ' + (e && e.message ? e.message : e);
+    var bad = document.getElementById('d' + id);
+    if (bad) bad.remove();
+  }
+}
+
+function currentZoom() {
+  var svg = out.querySelector('svg');
+  if (!svg) return 1;
+  if (zoom !== 'fit') return zoom;
+  return svg.getBoundingClientRect().width / naturalWidth(svg);
+}
+
+function setZoom(z) {
+  zoom = z;
+  applyZoom();
+}
+
+src.addEventListener('input', function () {
+  try { localStorage.setItem(KEY, src.value); } catch (e) {}
+  clearTimeout(timer);
+  timer = setTimeout(draw, 250);
+});
+document.getElementById('zin').addEventListener('click', function () {
+  setZoom(Math.min(4, currentZoom() * 1.25));
+});
+document.getElementById('zout').addEventListener('click', function () {
+  setZoom(Math.max(0.2, currentZoom() / 1.25));
+});
+document.getElementById('z100').addEventListener('click', function () { setZoom(1); });
+zfit.addEventListener('click', function () { setZoom('fit'); });
+
+var copyBtn = document.getElementById('copy');
+function flash(text) {
+  copyBtn.textContent = text;
+  setTimeout(function () { copyBtn.textContent = 'Copy code'; }, 1600);
+}
+copyBtn.addEventListener('click', function () {
+  function fallback() {
+    src.focus();
+    src.select();
+    flash('Press Ctrl+C');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(src.value).then(function () { flash('Copied'); }, fallback);
+  } else {
+    fallback();
+  }
+});
+document.getElementById('reset').addEventListener('click', function () {
+  src.value = DEFAULT_CODE;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  draw();
+});
+window.addEventListener('resize', function () { if (zoom === 'fit') applyZoom(); });
+
+draw();
+</script>

@@ -1,0 +1,23 @@
+{
+  "name": "SA repo workflow",
+  "nodes": [
+    {"id": "t1", "label": "Template repository<br>avq_sa_template", "x": 40, "y": 40, "w": 180},
+    {"id": "r1", "label": "New private repo<br>created by a team member", "x": 330, "y": 40},
+    {"id": "a1", "label": "Admin grants<br>Claude GitHub App access", "x": 600, "y": 40, "dashed": true},
+    {"id": "p1", "label": "Create Claude Project<br>and point it at the repo", "x": 870, "y": 40},
+    {"id": "s1", "label": "Shared skill plugin<br>(later)", "x": 870, "y": 190, "dashed": true},
+    {"id": "b1", "label": "AI agent reads context<br>and drafts document", "x": 1160, "y": 110},
+    {"id": "b2", "label": "Commit to GitHub<br>as AI contributor", "x": 1450, "y": 40, "w": 180},
+    {"id": "a3", "label": "Solution Architect<br>reviews", "x": 1720, "y": 40, "w": 190, "dashed": true}
+  ],
+  "edges": [
+    {"from": "t1", "to": "r1", "label": "Use template"},
+    {"from": "r1", "to": "a1"},
+    {"from": "a1", "to": "p1"},
+    {"from": "p1", "to": "b1", "entry": [0, 0.25]},
+    {"from": "s1", "to": "b1", "label": "Skill updates", "entry": [0, 0.75]},
+    {"from": "b1", "to": "b2"},
+    {"from": "b2", "to": "a3"},
+    {"from": "a3", "to": "b1", "label": "Feedback", "exit": [0.5, 1], "entry": [0.5, 1], "points": [[1815, 250], [1260, 250]]}
+  ]
+}

@@ -1,0 +1,25 @@
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Microsoft Office temporary and owner files
+~$*
+
+# LibreOffice lock files
+.~lock.*#
+
+# Draw.io temporary, backup and autosave files
+.$*.drawio*
+*.drawio.bkp
+*.drawio.tmp
+*.drawio~
+~*.drawio*
+
+# Common editor and temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~

@@ -1,0 +1,83 @@
+<h2 class="sr-only">Editable Mermaid diagram with Code and Preview buttons</h2>
+<div style="padding: 0.5rem 0;">
+<div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+<button id="tcode">Code</button>
+<button id="tprev">Preview</button>
+<button id="full">Full view ↗</button>
+<span style="flex: 1;"></span>
+<button id="send">Send to chat ↗</button>
+</div>
+<textarea id="src" spellcheck="false" style="width: 100%; height: 300px; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; box-sizing: border-box; display: block;">__MERMAID_CODE__</textarea>
+<div id="out" style="min-height: 120px; overflow: auto; padding: 8px 0;"></div>
+<p id="err" style="font-size: 13px; color: var(--text-danger); margin: 8px 0 0;"></p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+const src = document.getElementById('src');
+const out = document.getElementById('out');
+const err = document.getElementById('err');
+const tcode = document.getElementById('tcode');
+const tprev = document.getElementById('tprev');
+const ID = '__DIAGRAM_ID__';
+const original = src.value;
+let n = 0;
+const css = '.node rect{rx:14px;ry:14px;stroke-width:1px;}'
+  + '.nodeLabel{font-weight:500;}'
+  + '.flowchart-link{stroke-width:1px;}'
+  + '.edgeLabel{background-color:#ffffff;}'
+  + 'span.edgeLabel{display:inline-block;border:1px solid #cfd6dd;border-radius:999px;padding:2px 10px;font-size:12px;color:#44546a;background-color:#ffffff;}';
+if (typeof mermaid === 'undefined') {
+  err.textContent = 'The Mermaid library did not load in this widget.';
+} else {
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'base',
+    themeCSS: css,
+    themeVariables: {
+      fontFamily: 'Segoe UI, system-ui, sans-serif',
+      fontSize: '14px',
+      primaryColor: '#E6F1FB',
+      primaryBorderColor: '#B5D4F4',
+      primaryTextColor: '#0C447C',
+      textColor: '#0C447C',
+      lineColor: '#8b95a1',
+      edgeLabelBackground: '#ffffff'
+    },
+    flowchart: { curve: 'step', htmlLabels: true, nodeSpacing: 40, rankSpacing: 55, padding: 14, useMaxWidth: true }
+  });
+}
+async function draw() {
+  err.textContent = '';
+  if (typeof mermaid === 'undefined') return;
+  const id = 'mm' + (n++);
+  try {
+    const res = await mermaid.render(id, src.value);
+    out.innerHTML = res.svg;
+  } catch (e) {
+    err.textContent = 'Syntax error: ' + (e && e.message ? e.message : e);
+    const bad = document.getElementById('d' + id);
+    if (bad) bad.remove();
+  }
+}
+function setMode(m) {
+  src.style.display = m === 'code' ? 'block' : 'none';
+  out.style.display = m === 'preview' ? 'block' : 'none';
+  tcode.style.background = m === 'code' ? 'var(--surface-1)' : 'transparent';
+  tprev.style.background = m === 'preview' ? 'var(--surface-1)' : 'transparent';
+  if (m === 'preview') draw(); else err.textContent = '';
+}
+tcode.addEventListener('click', function () { setMode('code'); });
+tprev.addEventListener('click', function () { setMode('preview'); });
+document.getElementById('full').addEventListener('click', function () {
+  if (src.value === original) {
+    sendPrompt('Open the full-size editor page for the diagram "' + ID + '".');
+  } else {
+    sendPrompt('Open the full-size editor page for the diagram "' + ID + '", using my edited code:\n\n' + src.value);
+  }
+});
+document.getElementById('send').addEventListener('click', function () {
+  sendPrompt('Here is my edited Mermaid code, please use it as the current version:\n\n' + src.value);
+});
+setMode('preview');
+</script>
